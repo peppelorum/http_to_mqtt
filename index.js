@@ -1,8 +1,8 @@
 var settings = {
     mqtt: {
-        host: process.env.MQTT_HOST || '',
-        user: process.env.MQTT_USER || '',
-        password: process.env.MQTT_PASS || '',
+        host: process.env.MQTT_HOST || 'mqtts://m23.cloudmqtt.com:28772',
+        user: process.env.MQTT_USER || 'ruhtmnpf',
+        password: process.env.MQTT_PASS || 'AVzf758oez3O',
         clientId: process.env.MQTT_CLIENT_ID || null
     },
     keepalive: {
@@ -47,7 +47,7 @@ function logRequest(req, res, next) {
         '] from [' + ip + ']';
 
     if (settings.debug) {
-        message += ' with payload [' + JSON.stringify(req.body) + ']';
+        message += ' with payload [' + JSON.stringify(req.query) + ']';
     } else {
         message += '.';
     }
@@ -57,7 +57,7 @@ function logRequest(req, res, next) {
 }
 
 function authorizeUser(req, res, next) {
-    if (settings.auth_key && req.body['key'] != settings.auth_key) {
+    if (settings.auth_key && req.query.key != settings.auth_key) {
         console.log('Request is not authorized.');
         res.sendStatus(401);
     }
@@ -79,7 +79,7 @@ function checkSingleFileUpload(req, res, next) {
 
 function checkMessagePathQueryParameter(req, res, next) {
     if (req.query.path) {
-        req.body.message = req.body[req.query.path];
+        req.query.message = req.query[req.query.path];
     }
     next();
 }
@@ -87,14 +87,14 @@ function checkMessagePathQueryParameter(req, res, next) {
 function checkTopicQueryParameter(req, res, next) {
 
     if (req.query.topic) {
-        req.body.topic = req.query.topic;
+        req.query.topic = req.query.topic;
     }
 
     next();
 }
 
 function ensureTopicSpecified(req, res, next) {
-    if (!req.body.topic) {
+    if (!req.query.topic) {
         res.status(500).send('Topic not specified');
     }
     else {
@@ -107,8 +107,8 @@ app.get('/keep_alive/', logRequest, function (req, res) {
     res.sendStatus(200);
 });
 
-app.post('/post/', logRequest, authorizeUser, checkSingleFileUpload, checkMessagePathQueryParameter, checkTopicQueryParameter, ensureTopicSpecified, function (req, res) {
-    mqttClient.publish(req.body['topic'], req.body['message']);
+app.get('/post/', logRequest, authorizeUser, checkSingleFileUpload, checkMessagePathQueryParameter, checkTopicQueryParameter, ensureTopicSpecified, function (req, res) {
+    mqttClient.publish(req.query['topic'], req.query['message']);
     res.sendStatus(200);
 });
 
